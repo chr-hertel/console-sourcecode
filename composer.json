@@ -1,0 +1,21 @@
+{
+    "name": "stoffel/console-sourcecode",
+    "type": "library",
+    "description": "Helper to render source code using Symfony Console Component",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Christopher Hertel",
+            "email": "mail@christopher-hertel.de"
+        }
+    ],
+    "require": {
+        "php": "^7.4",
+        "symfony/console": "^5.2@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Stoffel\\Console\\SourceCode\\": "src/"
+        }
+    }
+}

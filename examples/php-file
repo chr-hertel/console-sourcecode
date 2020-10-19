@@ -1,0 +1,19 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Stoffel\Console\SourceCode\SourceCodeHelper;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\SingleCommandApplication;
+
+require dirname(__DIR__).'/vendor/autoload.php';
+
+(new SingleCommandApplication())
+    ->setCode(function (InputInterface $input, OutputInterface $output) {
+
+        SourceCodeHelper::create($output)
+            ->writeFile(dirname(__DIR__).'/src/SourceCodeHelper.php', 58, 17);
+    })
+    ->run();
