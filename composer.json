@@ -13,9 +13,15 @@
         "php": "^7.4 || ^8",
         "symfony/console": "^5.2@beta"
     },
+    "require-dev": {
+        "geshi/geshi": "v1.0.9.1"
+    },
     "autoload": {
         "psr-4": {
             "Stoffel\\Console\\SourceCode\\": "src/"
         }
+    },
+    "suggest": {
+        "geshi/geshi": "To use better highlighting and advanced themes"
     }
 }

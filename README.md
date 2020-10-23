@@ -17,6 +17,8 @@ $ example/php-file
 $ composer require stoffel/console-sourcecode
 ```
 
+You can install `geshi/geshi` to enable more detailed syntax highlighting.
+
 Usage in PHP
 
 ```php

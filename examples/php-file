@@ -15,6 +15,6 @@ require dirname(__DIR__).'/vendor/autoload.php';
 
         SourceCodeHelper::create($output)
             ->useTheme('seti')
-            ->writeFile(dirname(__DIR__).'/src/Highlighter.php', 26, 22);
+            ->writeFile(dirname(__DIR__).'/src/NativeHighlighter.php', 26, 22);
     })
     ->run();

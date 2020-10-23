@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Stoffel\Console\SourceCode;
 
+use GeSHi;
 use Symfony\Component\Console\Color;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -43,7 +44,7 @@ class SourceCodeHelper
     {
         $lineLengths = array_map('mb_strlen', explode(PHP_EOL, $code));
 
-        $highlightedCode = (new Highlighter($this->theme))->highlight($code);
+        $highlightedCode = $this->createHighlighter()->highlight($code);
         $highlightedCode = $this->buildBackground($highlightedCode, $lineLengths);
 
         return $highlightedCode;
@@ -69,6 +70,15 @@ class SourceCodeHelper
         $codeLines = explode(PHP_EOL, $highlightCode);
 
         $this->output->write(implode(PHP_EOL, array_slice($codeLines, $offset, $lines)).PHP_EOL);
+    }
+
+    private function createHighlighter(): Highlighter
+    {
+        if (class_exists(GeSHi::class)) {
+            return new GeshiHighlighter($this->theme);
+        }
+
+        return new NativeHighlighter($this->theme);
     }
 
     private function buildBackground(string $highlightedCode, array $lineLengths): string
