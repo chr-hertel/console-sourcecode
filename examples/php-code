@@ -21,6 +21,7 @@ echo $string;
 ';
 
         SourceCodeHelper::create($output)
+            ->disableLineNumbers()
             ->write($code);
 
     })

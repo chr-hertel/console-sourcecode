@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": "^7.4 || ^8",
-        "symfony/console": "^5.2@dev"
+        "symfony/console": "^5.2@beta"
     },
     "autoload": {
         "psr-4": {

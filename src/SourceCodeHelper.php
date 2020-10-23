@@ -10,28 +10,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class SourceCodeHelper
 {
-    private const DEFAULT_THEME = [
-        'comment' => '#F8F8F2',
-        'default' => '#FFD700',
-        'html' => '#DCC6E0',
-        'keyword' => '#00E0E0',
-        'string' => '#ABE338',
-    ];
-
     private OutputInterface $output;
-    private array $colorMap;
+    private bool $printLineNumbers = true;
+    private Theme $theme;
 
-    private function __construct(OutputInterface $output, array $theme = self::DEFAULT_THEME)
+    private function __construct(OutputInterface $output)
     {
         $this->output = $output;
-
-        $this->colorMap = [
-            ini_get('highlight.comment') => $theme['comment'] ?? self::DEFAULT_THEME['comment'],
-            ini_get('highlight.default') => $theme['default'] ?? self::DEFAULT_THEME['default'],
-            ini_get('highlight.html') => $theme['html'] ?? self::DEFAULT_THEME['html'],
-            ini_get('highlight.keyword') => $theme['keyword'] ?? self::DEFAULT_THEME['keyword'],
-            ini_get('highlight.string') => $theme['string'] ?? self::DEFAULT_THEME['string'],
-        ];
+        $this->theme = (new Themes())->getTheme('a11y-dark');
     }
 
     public static function create(OutputInterface $output = null): self
@@ -39,43 +25,33 @@ class SourceCodeHelper
         return new self($output ?? new NullOutput());
     }
 
-    public function highlightCode(string $code, int $lineNumber = 1): string
+    public function disableLineNumbers(): self
     {
-        $lineNumberColor = new Color('#999999');
-        $lines = mb_substr_count($code, PHP_EOL) + 1;
+        $this->printLineNumbers = false;
 
-        /** @var Color[] $colors */
-        $colors = [];
-
-        $renderLineNumber = static function () use ($lineNumberColor, $lines, &$lineNumber, &$colors) {
-            $activeColor = end($colors);
-            $unset = $activeColor instanceof Color ? $activeColor->unset() : '';
-            $set = $activeColor instanceof Color ? $activeColor->set() : '';
-
-            return $unset.$lineNumberColor->apply(
-                str_pad(sprintf('%d: ', $lineNumber++), 2 + mb_strlen((string)$lines), ' ', STR_PAD_LEFT)
-            ).$set;
-        };
-
-        return $renderLineNumber().trim(preg_replace_callback_array([
-            '@\<code\><span style="color: #[0-9a-fA-F]{1,6}"\>@' => fn () => '',
-            '@\<\/span>\s<\/code\>@' => fn () => '',
-            '@\<span style="color: (#[0-9a-fA-F]{1,6})"\>@' => function ($match) use (&$colors) {
-                $colors[] = new Color($this->colorMap[$match[1]]);
-
-                return end($colors)->set();
-            },
-            '@\<br /\>@' => fn () => PHP_EOL.$renderLineNumber(),
-            '@\</span\>@' => static function () use (&$colors) {
-                return array_pop($colors)->unset();
-            }],
-            html_entity_decode(highlight_string($code, true))
-        ));
+        return $this;
     }
 
-    public function write(string $code, int $lineNumber = 1): void
+    public function useTheme(string $theme): self
     {
-        $this->output->write($this->highlightCode($code, $lineNumber).PHP_EOL);
+        $this->theme = (new Themes())->getTheme($theme);
+
+        return $this;
+    }
+
+    public function highlightCode(string $code): string
+    {
+        $lineLengths = array_map('mb_strlen', explode(PHP_EOL, $code));
+
+        $highlightedCode = (new Highlighter($this->theme))->highlight($code);
+        $highlightedCode = $this->buildBackground($highlightedCode, $lineLengths);
+
+        return $highlightedCode;
+    }
+
+    public function write(string $code): void
+    {
+        $this->output->write($this->highlightCode($code).PHP_EOL);
     }
 
     public function writeFile(string $filePath, int $offset = 0, int $lines = null): void
@@ -93,5 +69,24 @@ class SourceCodeHelper
         $codeLines = explode(PHP_EOL, $highlightCode);
 
         $this->output->write(implode(PHP_EOL, array_slice($codeLines, $offset, $lines)).PHP_EOL);
+    }
+
+    private function buildBackground(string $highlightedCode, array $lineLengths): string
+    {
+        $color = new Color($this->theme->getComment(), $this->theme->getBackground());
+        $lines = explode(PHP_EOL, $highlightedCode);
+        $noLength = 2 + mb_strlen((string)count($lines));
+        $maxLength = max($lineLengths);
+
+        foreach ($lines as $no => $line) {
+            $lines[$no] = $line . $color->apply(str_repeat(' ', $maxLength - $lineLengths[$no]));
+
+            if ($this->printLineNumbers) {
+                $number = str_pad(sprintf('%d: ', $no+1), $noLength, ' ', STR_PAD_LEFT);
+                $lines[$no] = $color->apply($number).$lines[$no];
+            }
+        }
+
+        return implode(PHP_EOL, $lines);
     }
 }
