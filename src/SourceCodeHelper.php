@@ -39,22 +39,17 @@ class SourceCodeHelper
         return $this;
     }
 
-    public function highlightCode(string $code): string
+    public function highlightCode(string $code, int $minLineLength): string
     {
         $lineLengths = array_map('mb_strlen', explode(PHP_EOL, $code));
 
         $highlightedCode = (new Highlighter($this->theme))->highlight($code);
-        $highlightedCode = $this->buildBackground($highlightedCode, $lineLengths);
+        $highlightedCode = $this->buildBackground($highlightedCode, $lineLengths, $minLineLength);
 
         return $highlightedCode;
     }
 
-    public function write(string $code): void
-    {
-        $this->output->write($this->highlightCode($code).PHP_EOL);
-    }
-
-    public function writeFile(string $filePath, int $offset = 0, int $lines = null): void
+    public function highlightFile(string $filePath, int $offset = 0, int $lines = null, int $minLineLength = 60): string
     {
         if (!is_file($filePath)) {
             throw new \InvalidArgumentException(sprintf('PHP file "%s" does not exist', $filePath));
@@ -64,19 +59,28 @@ class SourceCodeHelper
             throw new \InvalidArgumentException(sprintf('PHP file "%s" is not readable', $filePath));
         }
 
-        $highlightCode = $this->highlightCode(file_get_contents($filePath));
-
+        $highlightCode = $this->highlightCode(file_get_contents($filePath), $minLineLength);
         $codeLines = explode(PHP_EOL, $highlightCode);
 
-        $this->output->write(implode(PHP_EOL, array_slice($codeLines, $offset, $lines)).PHP_EOL);
+        return implode(PHP_EOL, array_slice($codeLines, $offset, $lines));
     }
 
-    private function buildBackground(string $highlightedCode, array $lineLengths): string
+    public function write(string $code, int $minLineLength = 60): void
+    {
+        $this->output->write($this->highlightCode($code, $minLineLength).PHP_EOL);
+    }
+
+    public function writeFile(string $filePath, int $offset = 0, int $lines = null, int $minLineLength = 60): void
+    {
+        $this->output->write($this->highlightFile($filePath, $offset, $lines, $minLineLength).PHP_EOL);
+    }
+
+    private function buildBackground(string $highlightedCode, array $lineLengths, int $minLineLength): string
     {
         $color = new Color($this->theme->getComment(), $this->theme->getBackground());
         $lines = explode(PHP_EOL, $highlightedCode);
         $noLength = 2 + mb_strlen((string)count($lines));
-        $maxLength = max($lineLengths);
+        $maxLength = max(max($lineLengths), $minLineLength);
 
         foreach ($lines as $no => $line) {
             $lines[$no] = $line . $color->apply(str_repeat(' ', $maxLength - $lineLengths[$no]));
